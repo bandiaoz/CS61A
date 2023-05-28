@@ -107,6 +107,7 @@ class Ant(Insect):
     food_cost = 0
     is_container = False
     # ADD CLASS ATTRIBUTES HERE
+    blocks_path = True
 
     def __init__(self, health=1):
         """Create an Insect with a HEALTH quantity."""
@@ -544,7 +545,7 @@ class Bee(Insect):
         """Return True if this Bee cannot advance to the next Place."""
         # Special handling for NinjaAnt
         # BEGIN Problem Optional 1
-        return self.place.ant is not None
+        return self.place.ant is not None and self.place.ant.blocks_path
         # END Problem Optional 1
 
     def action(self, gamestate):
@@ -582,13 +583,15 @@ class NinjaAnt(Ant):
     damage = 1
     food_cost = 5
     # OVERRIDE CLASS ATTRIBUTES HERE
+    blocks_path = False
     # BEGIN Problem Optional 1
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem Optional 1
 
     def action(self, gamestate):
         # BEGIN Problem Optional 1
-        "*** YOUR CODE HERE ***"
+        for bee in self.place.bees.copy():
+            bee.reduce_health(self.damage)
         # END Problem Optional 1
 
 ############
@@ -602,8 +605,9 @@ class LaserAnt(ThrowerAnt):
     name = 'Laser'
     food_cost = 10
     # OVERRIDE CLASS ATTRIBUTES HERE
+    damage = 2
     # BEGIN Problem Optional 2
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem Optional 2
 
     def __init__(self, health=1):
@@ -612,12 +616,25 @@ class LaserAnt(ThrowerAnt):
 
     def insects_in_front(self):
         # BEGIN Problem Optional 2
-        return {}
+        insects = {}
+        place = self.place
+        distance = 0
+        while place is not None:
+            for bee in place.bees:
+                insects[bee] = distance
+            if place.ant is not None and place.ant is not self:
+                if place.ant.is_container and place.ant.ant_contained:
+                    insects[place.ant.ant_contained] = distance
+                insects[place.ant] = distance    
+            place = place.entrance
+            distance += 1
+        return insects
         # END Problem Optional 2
 
     def calculate_damage(self, distance):
         # BEGIN Problem Optional 2
-        return 0
+        # print("damage:", self.damage, "distance:", distance, "insects_shot:", self.insects_shot)
+        return max(0, self.damage - 0.0625 * self.insects_shot - 0.25 * distance)
         # END Problem Optional 2
 
     def action(self, gamestate):
